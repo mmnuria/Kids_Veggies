@@ -2,17 +2,17 @@ import cv2
 import speech_recognition as sr
 import threading
 import time
-import cuia
+import modules.cuia as cuia
 import face_recognition
 from config.calibracion import cargar_calibracion
 from models.modelos import MODELOS_FRUTAS_VERDURAS, crear_modelo_por_id, obtener_info_modelo
 from ar.escena import crear_escena
 from ar.deteccion import crear_detector, detectar_pose, ocultar_marcadores_visualmente
 from utils.conversiones import from_opencv_to_pygfx
-from usuarios import buscar_usuario_por_cara, guardar_puntuacion_juego, obtener_progreso_usuario, registrar_usuario, obtener_datos_visibles_usuario, verificar_usuario_existe, actualizar_nombre_usuario, actualizar_idioma_usuario
-from juegos import GestorJuegosAR, JuegoDescubreAR, JuegoEncuentraFrutasAR, JuegoCategoriasAR, JuegoMemoriaAR
+from modules.usuarios import buscar_usuario_por_cara, guardar_puntuacion_juego, obtener_progreso_usuario, registrar_usuario, obtener_datos_visibles_usuario, verificar_usuario_existe, actualizar_nombre_usuario, actualizar_idioma_usuario
+from modules.juegos import GestorJuegosAR, JuegoDescubreAR, JuegoEncuentraFrutasAR, JuegoCategoriasAR, JuegoMemoriaAR
 
-# ----- Estados de la aplicación -----
+# ----- ESTADOS DE LA APLICACION -----
 class GameState:
     def __init__(self):
         self.fase = "reconocimiento_facial"
@@ -72,7 +72,7 @@ def inicializar_microfono():
     global recognizer, microphone, state
     
     try:
-        print("🎤 Inicializando micrófono...")
+        print(" Inicializando micrófono...")
         recognizer = sr.Recognizer()
         microphone = sr.Microphone()
         
@@ -90,20 +90,20 @@ def inicializar_microfono():
         state.microfono_listo = False
 
 def verificar_respuesta(texto, respuesta_correcta):
-    """Verificar si la respuesta del usuario es correcta - MEJORADA"""
+    """Verificar si la respuesta del usuario es correcta"""
     texto = texto.lower().strip()
     respuesta_correcta = respuesta_correcta.lower().strip()
     
-    print(f"🔍 Verificando: '{texto}' == '{respuesta_correcta}'")
+    print(f" Verificando: '{texto}' == '{respuesta_correcta}'")
     
     # Verificación directa
     if respuesta_correcta in texto:
-        print("✅ Coincidencia directa encontrada")
+        print(" Coincidencia directa encontrada")
         return True
     
     # Verificación inversa (por si el usuario dice más palabras)
     if texto in respuesta_correcta:
-        print("✅ Coincidencia inversa encontrada")
+        print(" Coincidencia inversa encontrada")
         return True
     
     # Verificaciones con variaciones y sinónimos
@@ -126,7 +126,7 @@ def verificar_respuesta(texto, respuesta_correcta):
     if respuesta_correcta in variaciones:
         for variacion in variaciones[respuesta_correcta]:
             if variacion in texto:
-                print(f"✅ Variación encontrada: '{variacion}' en '{texto}'")
+                print(f" Variación encontrada: '{variacion}' en '{texto}'")
                 return True
     
     # Buscar si alguna clave de variaciones está en el texto del usuario
@@ -135,7 +135,7 @@ def verificar_respuesta(texto, respuesta_correcta):
             continue
         for variacion in lista_variaciones:
             if variacion in texto and clave == respuesta_correcta:
-                print(f"✅ Variación de clave encontrada: '{variacion}' -> '{clave}'")
+                print(f" Variación de clave encontrada: '{variacion}' -> '{clave}'")
                 return True
     
     # Verificación de palabras individuales (para casos complejos)
@@ -147,15 +147,15 @@ def verificar_respuesta(texto, respuesta_correcta):
         palabra_correcta = palabras_respuesta[0]
         for palabra in palabras_texto:
             if palabra == palabra_correcta:
-                print(f"✅ Palabra individual encontrada: '{palabra}'")
+                print(f" Palabra individual encontrada: '{palabra}'")
                 return True
             # Verificar en variaciones también
             if palabra_correcta in variaciones:
                 if palabra in variaciones[palabra_correcta]:
-                    print(f"✅ Variación de palabra encontrada: '{palabra}' -> '{palabra_correcta}'")
+                    print(f" Variación de palabra encontrada: '{palabra}' -> '{palabra_correcta}'")
                     return True
     
-    print(f"❌ No se encontró coincidencia para '{texto}' vs '{respuesta_correcta}'")
+    print(f" No se encontró coincidencia para '{texto}' vs '{respuesta_correcta}'")
     return False
 
 def reconocimiento_voz():
@@ -176,7 +176,7 @@ def reconocimiento_voz():
                     audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_limit)
                 
                 texto = recognizer.recognize_google(audio, language="es-ES").lower().strip()
-                print(f"🗣️ Detectado: '{texto}'")
+                print(f" Detectado: '{texto}'")
                 
                 # Limpiar mensaje de error previo
                 if hasattr(state, 'error_mensaje'):
@@ -184,35 +184,50 @@ def reconocimiento_voz():
                 
                 # ===== MANEJO DE COMANDOS INICIALES =====
                 if state.fase == "esperando_comando":
-                    if "iniciar sesión" in texto or "registrar" in texto or "registrarme" in texto or "iniciar" in texto:
-                        print("🔍 Comando: Iniciar sesión/Registro")
-                        if hasattr(state, 'vector_facial_actual'):
-                            nombre_encontrado, datos_usuario = buscar_usuario_por_cara(state.vector_facial_actual)
-                            if nombre_encontrado:
-                                state.usuario_nombre = nombre_encontrado
-                                state.usuario_data = datos_usuario
-                                state.sesion_iniciada = True
-                                state.fase = "menu_principal"
-                                print(f"✅ Sesión iniciada para {nombre_encontrado}")
-                            else:
-                                print("❌ Cara no registrada. Debes registrarte.")
-                                state.fase = "cara_no_registrada"
-                        else:
-                            print("⚠️ No se ha detectado una cara para verificar.")
-                    
-                    # Detener escucha para evitar repetir
+                    if "iniciar sesión" in texto:
+                        print(" Comando: Iniciar sesión")
+                        state.fase = "intentando_iniciar_sesion"
+
+                    elif "registrar" in texto or "registrarme" in texto:
+                        print(" Comando: Registro")
+                        state.fase = "esperando_nombre_registro"
+
+                    elif "iniciar" in texto:
+                        
+                        print("❓ ¿Quieres iniciar sesión o registrarte?")
+                        state.error_mensaje = "Di 'iniciar sesión' o 'registrarme' para continuar."
+
                     state.esperando_voz = False
-                
+
+                # ===== INICIO DE SESIÓN =====
+                elif state.fase == "intentando_iniciar_sesion":
+                    if hasattr(state, 'vector_facial_actual'):
+                        nombre_encontrado, datos_usuario = buscar_usuario_por_cara(state.vector_facial_actual)
+                        if nombre_encontrado:
+                            state.usuario_nombre = nombre_encontrado
+                            state.usuario_data = datos_usuario
+                            state.sesion_iniciada = True
+                            state.fase = "menu_principal"
+                            print(f" Sesión iniciada para {nombre_encontrado}")
+                        else:
+                            print(" Cara no registrada.")
+                            state.fase = "inicio_sesion_fallido"
+                    else:
+                        print(" No se ha detectado una cara para verificar.")
+                        state.error_mensaje = "No se ha detectado una cara para iniciar sesion."
+
+                    state.esperando_voz = False
+
                 # ===== REGISTRO DE NOMBRE =====
                 elif state.fase == "esperando_nombre_registro":
                     nombre = texto.strip().title()
-                    print(f"👤 Usuario dijo llamarse: {nombre}")
+                    print(f" Usuario dijo llamarse: {nombre}")
                     
                     if len(nombre) >= 2:  # Validación básica
                         # Verificar si el usuario ya existe
                         if verificar_usuario_existe(nombre):
                             state.error_mensaje = f"Usuario {nombre} ya existe. Di otro nombre"
-                            print(f"⚠️ Usuario {nombre} ya existe")
+                            print(f" Usuario {nombre} ya existe")
                         else:
                             state.usuario_nombre = nombre
                             state.esperando_voz = False
@@ -222,7 +237,7 @@ def reconocimiento_voz():
                 
                 # ===== SELECCIÓN DE IDIOMA EN REGISTRO =====
                 elif state.fase == "esperando_idioma_registro":
-                    print(f"🌐 Usuario eligio idioma: {texto}")
+                    print(f" Usuario eligio idioma: {texto}")
                     
                     idiomas_disponibles = {
                         "español": "es",
@@ -245,7 +260,7 @@ def reconocimiento_voz():
                             )
                             
                             if datos:
-                                print(f"🆕 Usuario {state.usuario_nombre} registrado correctamente")
+                                print(f" Usuario {state.usuario_nombre} registrado correctamente")
                                 state.usuario_data = datos
                                 state.esperando_voz = False
                                 state.fase = "menu_principal"
@@ -257,8 +272,8 @@ def reconocimiento_voz():
                         else:
                             state.error_mensaje = "Error: no hay datos faciales"
                     else:
-                        print(f"❌ Idioma no reconocido: {texto}")
-                        state.error_mensaje = "Idioma no valido (di: español o inglés)"
+                        print(f" Idioma no reconocido: {texto}")
+                        state.error_mensaje = "Idioma no valido (di: espaniol o ingles)"
 
                 # ===== MENÚ PRINCIPAL =====
                 elif state.fase == "menu_principal":
@@ -275,7 +290,7 @@ def reconocimiento_voz():
                         state.esperando_voz = False
                         state.fase = "ver_progreso"
                     elif "salir" in texto or "cerrar" in texto:
-                        print("👋 Cerrando aplicación")
+                        print(" Cerrando aplicación")
                         state.esperando_voz = False
                         state.fase = "salir"
                 
@@ -305,7 +320,7 @@ def reconocimiento_voz():
                 
                 elif state.fase == "esperando_nuevo_nombre":
                     nuevo_nombre = texto.strip().title()
-                    print(f"🔁 Usuario quiere cambiar su nombre a: {nuevo_nombre}")
+                    print(f" Usuario quiere cambiar su nombre a: {nuevo_nombre}")
 
                     if len(nuevo_nombre) >= 2:
                         comandos_reservados = ["salir", "cuenta", "comenzar", "cambiar nombre", "cambiar idioma", "volver"]
@@ -322,7 +337,7 @@ def reconocimiento_voz():
                             state.contador_nombre = 0
                             state.esperando_voz = False
                             actualizar_nombre_usuario(nombre_anterior, nuevo_nombre)
-                            print(f"✅ Nombre cambiado a {nuevo_nombre}")
+                            print(f" Nombre cambiado a {nuevo_nombre}")
                         
                         state.nombre_cambiado = False
                     else:
@@ -353,20 +368,20 @@ def reconocimiento_voz():
                             state.idioma_seleccionado = "en"
 
                         actualizar_idioma_usuario(state.usuario_nombre, state.idioma_seleccionado)
-                        print(f"✅ Idioma cambiado a {idioma_texto}")
+                        print(f" Idioma cambiado a {idioma_texto}")
                         state.idioma_cambiado = False
                     else:
-                        state.error_mensaje = "Idioma no valido (di: español o inglés)"
+                        state.error_mensaje = "Idioma no valido (di: espaniol o ingles)"
 
                 # ===== SELECCIÓN DE MODO =====
                 elif state.fase == "seleccion_modo":
                     if "entrenamiento" in texto or "entrenar" in texto or "practicar" in texto:
-                        print("🎯 Modo entrenamiento seleccionado")
+                        print(" Modo entrenamiento seleccionado")
                         state.esperando_voz = False
                         state.fase = "seleccion_juego"
                         state.modo_juego = "entrenamiento"
                     elif "evaluación" in texto or "evaluacion" in texto or "evaluar" in texto:
-                        print("📊 Modo evaluación seleccionado")
+                        print(" Modo evaluación seleccionado")
                         state.esperando_voz = False
                         state.fase = "seleccion_juego"
                         state.modo_juego = "evaluacion"
@@ -381,29 +396,29 @@ def reconocimiento_voz():
                     
                     if state.modo_juego == "entrenamiento":
                         if "descubre" in texto or "nombra" in texto or "nombres" in texto:
-                            print("🔍 Juego 'Descubre y Nombra' seleccionado")
+                            print(" Juego 'Descubre y Nombra' seleccionado")
                             try:
                                 if not hasattr(state, 'gestor_juegos') or state.gestor_juegos is None:
-                                    print("❌ Error: gestor_juegos no está inicializado")
+                                    print(" Error: gestor_juegos no está inicializado")
                                 elif "volver" in texto or "atras" in texto or "salir" in texto:
                                     print("Volviendo al menu de juego")
                                     state.esperando_voz = False
                                     state.fase = "seleccion_juego"
                                 else:
                                     state.gestor_juegos.establecer_modo(state.modo_juego)
-                                    print(f"✅ Modo establecido en gestor: {state.modo_juego}")
+                                    print(f" Modo establecido en gestor: {state.modo_juego}")
                                     
                                     state.gestor_juegos.iniciar_juego("descubre")
                                     
                                     if (state.gestor_juegos.juego_activo is not None and 
                                         state.gestor_juegos.estado_juego == "en_juego"):
                                         juego_iniciado = True
-                                        print("✅ Juego iniciado correctamente")
+                                        print(" Juego iniciado correctamente")
                                     else:
-                                        print("❌ Error: juego no se inició correctamente")
+                                        print(" Error: juego no se inició correctamente")
                                     
                             except Exception as e:
-                                print(f"❌ Error detallado al iniciar juego: {e}")
+                                print(f" Error detallado al iniciar juego: {e}")
                                 import traceback
                                 print(f"   - Traceback: {traceback.format_exc()}")
                         
@@ -423,12 +438,12 @@ def reconocimiento_voz():
                                     if (state.gestor_juegos.juego_activo is not None and 
                                         state.gestor_juegos.estado_juego == "en_juego"):
                                         juego_iniciado = True
-                                        print("✅ Juego iniciado correctamente")
+                                        print(" Juego iniciado correctamente")
                                     else:
-                                        print("❌ Error: juego no se inicio correctamente")
+                                        print(" Error: juego no se inicio correctamente")
                               
                             except Exception as e:
-                                print(f"❌ Error detallado al iniciar juego: {e}")
+                                print(f" Error detallado al iniciar juego: {e}")
                                 import traceback
                                 print(f"   - Traceback: {traceback.format_exc()}")
                         
@@ -439,10 +454,10 @@ def reconocimiento_voz():
 
                     elif state.modo_juego == "evaluacion":
                         if "categorias" in texto or "categorías" in texto or "agrupa" in texto or "separa" in texto:
-                            print("📊 Juego 'Agrupa por Categorías' seleccionado")
+                            print(" Juego 'Agrupa por Categorías' seleccionado")
                             try:
                                 if not hasattr(state, 'gestor_juegos') or state.gestor_juegos is None:
-                                    print("❌ Error: gestor_juegos no esta inicializado")
+                                    print(" Error: gestor_juegos no esta inicializado")
                                 elif "volver" in texto or "atras" in texto or "salir" in texto:
                                     print("Volviendo al menu de juego")
                                     state.esperando_voz = False
@@ -454,20 +469,20 @@ def reconocimiento_voz():
                                     if (state.gestor_juegos.juego_activo is not None and 
                                         state.gestor_juegos.estado_juego == "en_juego"):
                                         juego_iniciado = True
-                                        print("✅ Juego iniciado correctamente")
+                                        print(" Juego iniciado correctamente")
                                     else:
-                                        print("❌ Error: juego no se inicio correctamente")
+                                        print(" Error: juego no se inicio correctamente")
                                         
                             except Exception as e:
-                                print(f"❌ Error detallado al iniciar juego: {e}")
+                                print(f" Error detallado al iniciar juego: {e}")
                                 import traceback
                                 print(f"   - Traceback: {traceback.format_exc()}")
                         
                         elif "memoria" in texto or "recuerda" in texto or "secuencia" in texto:
-                            print("🧠 Juego 'Juego de Memoria' seleccionado")
+                            print(" Juego 'Juego de Memoria' seleccionado")
                             try:
                                 if not hasattr(state, 'gestor_juegos') or state.gestor_juegos is None:
-                                    print("❌ Error: gestor_juegos no esta inicializado")
+                                    print(" Error: gestor_juegos no esta inicializado")
                                 elif "volver" in texto or "atras" in texto or "salir" in texto:
                                     print("Volviendo al menu de juego")
                                     state.esperando_voz = False
@@ -479,13 +494,13 @@ def reconocimiento_voz():
                                     if (state.gestor_juegos.juego_activo is not None and 
                                         state.gestor_juegos.estado_juego == "en_juego"):
                                         juego_iniciado = True
-                                        print("✅ Juego iniciado correctamente")
+                                        print(" Juego iniciado correctamente")
                                 
                                     else:
-                                        print("❌ Error: juego no se inicio correctamente")
+                                        print(" Error: juego no se inicio correctamente")
                                         
                             except Exception as e:
-                                print(f"❌ Error detallado al iniciar juego: {e}")
+                                print(f" Error detallado al iniciar juego: {e}")
                                 import traceback
                                 print(f"   - Traceback: {traceback.format_exc()}")
                         elif "volver" in texto or "atras" in texto or "salir" in texto:
@@ -496,15 +511,15 @@ def reconocimiento_voz():
                     if juego_iniciado:
                         state.esperando_voz = False
                         state.fase = "jugando"
-                        print(f"✅ Cambiando a fase 'jugando'")
+                        print(f" Cambiando a fase 'jugando'")
                     else:
-                        print("⚠️  No se pudo iniciar el juego. Permaneciendo en seleccion de juego.")
+                        print("  No se pudo iniciar el juego. Permaneciendo en seleccion de juego.")
                         state.esperando_voz = True
                 
                 # ===== COMANDOS DURANTE EL JUEGO =====
                 elif state.fase == "jugando":
                     if "salir" in texto or "volver" in texto or "atras" in texto:
-                        print("🔙 Volviendo al menu")
+                        print(" Volviendo al menu")
                         state.esperando_voz = False
                         state.fase = "menu_principal"
                         if hasattr(state.gestor_juegos, 'resetear'):
@@ -518,11 +533,11 @@ def reconocimiento_voz():
                             resultado = state.gestor_juegos.juego_activo.procesar_comando(texto)
                             
                             if resultado:
-                                print("✅ Comando de voz procesado por el juego")
+                                print(" Comando de voz procesado por el juego")
                                 state.gestor_juegos.procesar_resultado_juego(resultado)
                                 state.esperando_voz = False
                             else:
-                                print("⚠️ Comando no reconocido por el juego")
+                                print(" Comando no reconocido por el juego")
 
                 # ===== RESPUESTAS DEL JUEGO =====
                 elif state.fase == "esperando_respuesta" and hasattr(state, 'info_modelo_actual') and state.info_modelo_actual:
@@ -539,11 +554,11 @@ def reconocimiento_voz():
                         if hasattr(state, 'marcadores_pendientes') and hasattr(state, 'marker_id_actual'):
                             state.marcadores_pendientes.discard(state.marker_id_actual)
                         
-                        print(f"✅ ¡Respuesta correcta! Puntuacion: {state.puntuacion}")
+                        print(f" ¡Respuesta correcta! Puntuacion: {state.puntuacion}")
                     else:
                         state.respuesta_recibida = texto
                         state.respuesta_correcta = False
-                        print(f"❌ Respuesta incorrecta. Esperaba: {respuesta_correcta}")
+                        print(f" Respuesta incorrecta. Esperaba: {respuesta_correcta}")
                     
                     if hasattr(state, 'total_preguntas'):
                         state.total_preguntas += 1
@@ -572,24 +587,24 @@ def reconocimiento_voz():
             
             # ===== MANEJO DE ERRORES =====
             except sr.WaitTimeoutError:
-                print("⏰ Timeout - reintentando...")
+                print(" Timeout - reintentando...")
                 if hasattr(state, 'fase') and state.fase in ["jugando", "esperando_respuesta"]:
                     state.error_mensaje = "No se escucho respuesta, intenta de nuevo"
                 continue
             
             except sr.UnknownValueError:
-                print("❌ No se entendió el audio")
+                print(" No se entendió el audio")
                 state.error_mensaje = "No se entendio, habla mas claro"
                 continue
             
             except sr.RequestError as e:
-                print(f"❌ Error del servicio de reconocimiento: {e}")
+                print(f" Error del servicio de reconocimiento: {e}")
                 state.error_mensaje = "Error de conexion"
                 time.sleep(1)
                 continue
             
             except Exception as e:
-                print(f"❌ Error inesperado en reconocimiento: {e}")
+                print(f" Error inesperado en reconocimiento: {e}")
                 import traceback
                 print(f"   - Traceback: {traceback.format_exc()}")
                 state.error_mensaje = "Error inesperado"
@@ -609,7 +624,7 @@ def iniciar_juego(juego_id):
     juego_data = state.usuario_data.get("juegos", {}).get(juego_id, {})
     state.marcadores_respondidos = set(juego_data.get("respondidos", []))
     state.puntuacion = juego_data.get("puntuacion", 0)
-    print(f"🟢 Juego {juego_id} iniciado con progreso cargado")
+    print(f" Juego {juego_id} iniciado con progreso cargado")
 
 # ----- FUNCION DE PROCESAMIENTO FACIAL -----
 def extraer_vector_facial(frame, face_box):
@@ -685,7 +700,7 @@ def realidad_mixta(frame, detector, cameraMatrix, distCoeffs):
                         escenas[marker_id] = crear_escena(modelo, cameraMatrix,
                                                           int(frame.shape[1]), int(frame.shape[0]))
 
-                    print(f"🍎 Mostrando: {state.info_modelo_actual['nombre']} (ID: {marker_id})")
+                    print(f" Mostrando: {state.info_modelo_actual['nombre']} (ID: {marker_id})")
                 
                 
 
@@ -759,7 +774,8 @@ def main():
             current_time = time.time()
 
             alto = frame.shape[0]  # Altura del frame
-            # ----- FASE 1: Reconocimiento Facial Inicial -----
+            
+            # ----- FASE 1: Reconocimiento Facial inicial -----
             if state.fase == "reconocimiento_facial":
                 faces = FACE_CASCADE.detectMultiScale(gray, 1.3, 5)
                 
@@ -816,7 +832,7 @@ def main():
                     state.esperando_voz = True
 
             # ----- FASE 3: Proceso de inicio de sesión -----
-            elif state.fase == "iniciando_sesion":
+            elif state.fase == "intentando_iniciar_sesion":
                 draw_text_with_background(frame, "Verificando identidad...", (50, alto - 100),
                                         color=(255, 255, 255), bg_color=(0, 100, 100))
                 
@@ -832,41 +848,85 @@ def main():
                         state.sesion_iniciada = True
                         print(f"🔓 Sesión iniciada para {nombre_encontrado}")
                     else:
-                        # Usuario no encontrado - enviar a registro
-                        state.fase = "cara_no_registrada"
+                        print("❌ Cara no registrada. Debes registrarte primero.")
+                        state.error_mensaje = "Cara no registrada. Di 'registrarme' para crear una cuenta."
+                        state.fase = "inicio_sesion_fallido"
+                        state.esperando_voz = False
 
-            # ----- FASE 4: Cara no registrada ----- AÑADIRLE PAUSA PARA QUE SE VEA BIEN
-            elif state.fase == "cara_no_registrada":
-                draw_text_with_background(frame, "Cara no registrada en el sistema", (50, alto - 130),
+            # ----- FASE 4: Inicio de sesión fallido -----
+            elif state.fase == "inicio_sesion_fallido":
+                draw_text_with_background(frame, "Cara no registrada. No puedes iniciar sesion.", (50, alto - 130),
                                         color=(255, 255, 255), bg_color=(200, 50, 50))
-                draw_text_with_background(frame, "¿Como te llamas?", (50, alto - 100),
+                draw_text_with_background(frame, "Di: 'registrarme' para crear una cuenta", (50, alto - 100),
                                         color=(255, 255, 255), bg_color=(0, 0, 100))
-                state.esperando_voz = True
+                
                 # Guardar el tiempo de inicio de esta fase si no existe
                 if not hasattr(state, 'tiempo_pausa_cara_no_registrada'):
                     state.tiempo_pausa_cara_no_registrada = time.time()
                 
                 # Comprobar si pasaron 2 segundos para avanzar
                 if time.time() - state.tiempo_pausa_cara_no_registrada > 2:
-                    state.fase = "esperando_nombre_registro"
+                    state.fase ="esperando_comando"
                     del state.tiempo_pausa_cara_no_registrada
-
-            # ----- FASE 5: Registro - esperando nombre -----
-            elif state.fase == "esperando_nombre_registro":
-                draw_text_with_background(frame, "Escuchando tu nombre...", (50, alto - 100),
-                                        color=(255, 255, 255), bg_color=(0, 100, 0))
                 
-                if hasattr(state, 'error_mensaje'):
-                    draw_text_with_background(frame, state.error_mensaje, (50, alto - 130),
-                                            color=(255, 255, 255), bg_color=(200, 50, 50))
+                state.esperando_voz = True
 
-            # ----- FASE 6: Registro - esperando idioma -----
+            # ----- FASE 5: Proceso de registro fallido o no -----
+            elif state.fase == "registro_denegado_por_seguridad":
+                draw_text_with_background(frame, "Esa cara ya esta registrada.", (50, alto - 130),
+                                        color=(255, 255, 255), bg_color=(200, 50, 50))
+                draw_text_with_background(frame, "Di: 'iniciar sesion' para entrar", (50, alto - 100),
+                                        color=(255, 255, 255), bg_color=(0, 0, 100))
+                # Guardar el tiempo de inicio de esta fase si no existe
+                if not hasattr(state, 'tiempo_pausa'):
+                    state.tiempo_pausa = time.time()
+                
+                # Comprobar si pasaron 2 segundos para avanzar
+                if time.time() - state.tiempo_pausa > 2:
+                    state.fase = "esperando_comando"
+                    del state.tiempo_pausa
+                    
+                state.esperando_voz = True
+            
+            # ----- Proceso de registro -----
+            elif state.fase == "esperando_nombre_registro":
+                # Verificar si la cara ya está registrada
+                if hasattr(state, 'vector_facial_actual'):
+                    nombre_encontrado, datos_usuario = buscar_usuario_por_cara(state.vector_facial_actual)
+                    if nombre_encontrado:
+                        # Ya existe, no dejar registrar
+                        state.error_mensaje = f"Usuario registrado como {nombre_encontrado}. Di 'iniciar sesion'."
+                        print(f" Intento de registro con cara ya registrada: {nombre_encontrado}")
+
+                        # Guardar el tiempo de inicio de esta fase si no existe
+                        if not hasattr(state, 'tiempo_pausa'):
+                            state.tiempo_pausa = time.time()
+                        
+                        # Comprobar si pasaron 2 segundos para avanzar
+                        if time.time() - state.tiempo_pausa > 2:
+                            state.fase = "registro_denegado_por_seguridad"
+                            del state.tiempo_pausa
+                        
+                        state.esperando_voz = False
+                    else:
+                        # Continuar con el flujo de pedir nombre
+                        draw_text_with_background(frame, "Dime tu nombre...", (50, alto - 100),
+                                                color=(255, 255, 255), bg_color=(0, 100, 0))
+                        
+                        if hasattr(state, 'error_mensaje'):
+                            draw_text_with_background(frame, state.error_mensaje, (50, alto - 130),
+                                                    color=(255, 255, 255), bg_color=(200, 50, 50))
+                        state.esperando_voz = True
+                else:
+                    state.error_mensaje = "No se detecto tu cara. Intenta de nuevo."
+                    print(" Registro detenido: no hay vector facial.")
+
             elif state.fase == "esperando_idioma_registro":
                 draw_text_with_background(frame, f"Hola {state.usuario_nombre}!", (50, alto - 160),
                                 color=(255, 255, 255), bg_color=(0, 100, 0))
                 draw_text_with_background(frame, "¿Que idioma prefieres?", (50, alto - 130),
                                 color=(255, 255, 255), bg_color=(100, 100, 0))
-                draw_text_with_background(frame, "Di: 'español' o 'ingles'", (50, alto - 100),
+                draw_text_with_background(frame, "Di: 'espaniol' o 'ingles'", (50, alto - 100),
                                 color=(255, 255, 255), bg_color=(100, 100, 0))
                 
                 state.esperando_voz = True
@@ -875,6 +935,7 @@ def main():
                     draw_text_with_background(frame, state.error_mensaje, (50, alto - 190),
                                             color=(255, 255, 255), bg_color=(200, 50, 50))
             
+            # ----- FASE 6: Menu principal -----
             elif state.fase == "menu_principal":
                 # Mostrar mensaje de registro exitoso si acabamos de registrar
                 if hasattr(state, 'registro_exitoso') and state.registro_exitoso:
@@ -915,6 +976,7 @@ def main():
                 # Activar reconocimiento de voz
                 state.esperando_voz = True
 
+            # ----- FASE 6.1: Acceder a ver progreso -----
             elif state.fase == "ver_progreso":
                 
                 progreso = obtener_progreso_usuario(state.usuario_nombre)
@@ -940,6 +1002,7 @@ def main():
                 draw_text_with_background(frame, "Di 'volver' para regresar al menu", (50, alto - 60), bg_color=(0, 0, 100))
                 state.esperando_voz = True
 
+            # ----- FASE 6.2: Acceder a la configuración de la cuenta -----
             elif state.fase == "configuracion_cuenta":
                 draw_text_with_background(frame, "CONFIGURACION DE LA CUENTA", (50, 40),
                                 color=(255, 255, 255), bg_color=(0, 100, 0))
@@ -970,6 +1033,9 @@ def main():
                 # Activar reconocimiento de voz
                 state.esperando_voz = True
 
+             # ----- FASE 6.2: Acceder a la configuración de la cuenta -----
+            
+            # ----- FASE 6.3: Cambio de nombre -----
             elif state.fase == "esperando_nuevo_nombre":
                 draw_text_with_background(frame, "Escuchando nuevo nombre...", (50, 40),
                                 color=(255, 255, 255), bg_color=(0, 100, 0))
@@ -993,6 +1059,7 @@ def main():
                     draw_text_with_background(frame, state.error_mensaje, (50, alto - 190),
                                             color=(255, 255, 255), bg_color=(200, 50, 50))
 
+            # ----- FASE 6.4: Cambio de idioma -----
             elif state.fase == "esperando_nuevo_idioma":
                 draw_text_with_background(frame, "Escuchando nuevo idioma...", (50, 40),
                                 color=(255, 255, 255), bg_color=(0, 100, 0))
@@ -1015,6 +1082,8 @@ def main():
                     draw_text_with_background(frame, state.error_mensaje, (50, alto - 190),
                                             color=(255, 255, 255), bg_color=(200, 50, 50))
                     
+            
+            # ----- FASE 7: Menú para seleccionar modo de juego -----
             elif state.fase == "seleccion_modo":
                 nombre = state.usuario_nombre or "Desconocido"
                 draw_text_with_background(frame, f"Hola, {nombre}", (50, 80),
@@ -1033,6 +1102,7 @@ def main():
                 # Activar reconocimiento de voz
                 state.esperando_voz = True
 
+            # ----- FASE 8: Menú para seleccionar el juego -----
             elif state.fase == "seleccion_juego":
                 # Mostrar el modo seleccionado
                 modo = getattr(state, 'modo_juego', 'desconocido')
@@ -1063,6 +1133,7 @@ def main():
                 # Activar reconocimiento de voz
                 state.esperando_voz = True
             
+            # ----- FASE 9: Jugando al juego -----
             elif state.fase == "jugando":
                 # --- 1. Crear dos frames: uno para deteccion, otro para visualizacion ---
                 frame_limpio = frame.copy()   # Sin modificar, para deteccion y pose

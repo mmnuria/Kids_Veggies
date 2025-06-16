@@ -1,4 +1,4 @@
-import cuia
+import modules.cuia as cuia
 import numpy as np
 
 def crear_modelo_pera():
@@ -157,8 +157,8 @@ def crear_modelo_por_id(marker_id):
     if marker_id in MODELOS_FRUTAS_VERDURAS:
         return MODELOS_FRUTAS_VERDURAS[marker_id]['crear_modelo']()
     else:
-        # Por defecto, mostrar pera si el ID no está en el diccionario
-        return crear_modelo_pera()
+        # Por defecto, mostrar lechuga si el ID no está en el diccionario
+        return crear_modelo_lechuga()
 
 def obtener_info_modelo(marker_id):
     """
@@ -167,5 +167,4 @@ def obtener_info_modelo(marker_id):
     if marker_id in MODELOS_FRUTAS_VERDURAS:
         return MODELOS_FRUTAS_VERDURAS[marker_id]
     else:
-        # Por defecto
-        return MODELOS_FRUTAS_VERDURAS[0]
+        return MODELOS_FRUTAS_VERDURAS[3]

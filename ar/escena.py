@@ -1,4 +1,4 @@
-import cuia
+import modules.cuia as cuia
 import numpy as np
 
 def fov(cameraMatrix, ancho, alto):
