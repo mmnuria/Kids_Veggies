@@ -1303,7 +1303,7 @@ def main():
                 if state.gestor_juegos:
                     state.gestor_juegos.dibujar_interfaz(frame_visual)
 
-                # --- 10. Mostrar estado de escucha activo (SIMPLIFICADO) ---
+                # --- 10. Mostrar estado de escucha activo ---
                 if state.esperando_voz:
                     draw_text_with_background(frame_visual, "[VOZ] VOZ ACTIVA", 
                                             (frame_visual.shape[1] - 200, 30), font_scale=0.5,
@@ -1344,8 +1344,44 @@ def main():
                         if exito:
                             juego_actual.puntuacion_guardada = True
                             print(f"[OK] Puntuacion guardada: {puntuacion}% para {nombre_juego}")
+                
+                # --- 13. Guardar puntuacion para JuegoEncuentraFrutasAR ---
+                if isinstance(juego_actual, JuegoEncuentraFrutasAR) and juego_actual.juego_terminado:
+                    if not getattr(juego_actual, "puntuacion_guardada", False):
+                        modo = state.gestor_juegos.modo_actual
+                        nombre_juego = juego_actual.obtener_nombre()
+                        
+                        if hasattr(juego_actual, 'resultado_final') and juego_actual.resultado_final:
+                            puntuacion = int(juego_actual.resultado_final.get('precision', 0))
+                        else:
+                            puntuacion_raw = getattr(juego_actual, 'puntuacion', 0)
+                            intentos = getattr(juego_actual, 'intentos', 1)
+                            puntuacion = int((puntuacion_raw / intentos) * 100) if intentos > 0 else 0
+                        
+                        exito = guardar_puntuacion_juego(nombre, modo, nombre_juego, puntuacion)
+                        if exito:
+                            juego_actual.puntuacion_guardada = True
+                            print(f"[OK] Puntuacion guardada: {puntuacion}% para {nombre_juego}")
 
-                # --- 13. Instrucciones generales (SIMPLIFICADAS) ---
+                # --- 14. Guardar puntuacion para JuegoMemoriaAR ---
+                if isinstance(juego_actual, JuegoMemoriaAR) and juego_actual.juego_terminado:
+                    if not getattr(juego_actual, "puntuacion_guardada", False):
+                        modo = state.gestor_juegos.modo_actual
+                        nombre_juego = juego_actual.obtener_nombre()
+                        
+                        if hasattr(juego_actual, 'resultado_final') and juego_actual.resultado_final:
+                            puntuacion = int(juego_actual.resultado_final.get('porcentaje', 0))
+                        else:
+                            puntuacion_raw = getattr(juego_actual, 'puntuacion', 0)
+                            intentos = getattr(juego_actual, 'intentos', 1)
+                            puntuacion = int((puntuacion_raw / intentos) * 100) if intentos > 0 else 0
+                        
+                        exito = guardar_puntuacion_juego(nombre, modo, nombre_juego, puntuacion)
+                        if exito:
+                            juego_actual.puntuacion_guardada = True
+                            print(f"[OK] Puntuacion guardada: {puntuacion}% para {nombre_juego}")
+
+                # --- 15. Instrucciones generales ---
                 instrucciones = []
                 
                 if isinstance(juego_actual, JuegoDescubreAR):

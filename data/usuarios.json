@@ -9,41 +9,41 @@
       },
       "evaluacion": {
         "MEMORIA AR": {
-          "puntuacion_media": 100.0,
-          "partidas_jugadas": 1,
+          "puntuacion_media": 50.0,
+          "partidas_jugadas": 2,
           "mejor_puntuacion": 100.0,
-          "ultima_puntuacion": 100.0,
+          "ultima_puntuacion": 0.0,
           "suma_porcentajes": 100.0,
-          "fecha_ultima_partida": "2025-06-15T18:01:12.613622",
+          "fecha_ultima_partida": "2025-06-18T10:39:47.892502",
           "fecha_primera_partida": "2025-06-15T18:01:12.613645"
         },
         "AGRUPA POR CATEGORIAS": {
-          "puntuacion_media": 66.5,
-          "partidas_jugadas": 6,
+          "puntuacion_media": 64.14,
+          "partidas_jugadas": 7,
           "mejor_puntuacion": 100.0,
-          "ultima_puntuacion": 100.0,
-          "suma_porcentajes": 399.0,
-          "fecha_ultima_partida": "2025-06-15T21:44:59.303735",
+          "ultima_puntuacion": 50.0,
+          "suma_porcentajes": 449.0,
+          "fecha_ultima_partida": "2025-06-18T10:29:49.142613",
           "fecha_primera_partida": "2025-06-15T20:35:26.045387"
         }
       },
       "entrenamiento": {
         "DESCUBRE Y NOMBRA": {
-          "puntuacion_media": 72.73,
-          "partidas_jugadas": 11,
+          "puntuacion_media": 75.0,
+          "partidas_jugadas": 12,
           "mejor_puntuacion": 100.0,
-          "ultima_puntuacion": 0.0,
-          "suma_porcentajes": 800.0,
-          "fecha_ultima_partida": "2025-06-16T14:14:38.089672",
+          "ultima_puntuacion": 100.0,
+          "suma_porcentajes": 900.0,
+          "fecha_ultima_partida": "2025-06-18T10:23:24.085139",
           "fecha_primera_partida": "2025-06-15T18:09:20.297446"
         },
         "ENCUENTRA LAS FRUTAS": {
-          "puntuacion_media": 100.0,
-          "partidas_jugadas": 1,
+          "puntuacion_media": 50.0,
+          "partidas_jugadas": 2,
           "mejor_puntuacion": 100.0,
-          "ultima_puntuacion": 100.0,
+          "ultima_puntuacion": 0.0,
           "suma_porcentajes": 100.0,
-          "fecha_ultima_partida": "2025-06-15T20:12:40.114845",
+          "fecha_ultima_partida": "2025-06-18T10:38:28.137919",
           "fecha_primera_partida": "2025-06-15T20:12:40.116364"
         }
       }
@@ -179,7 +179,7 @@
       0.09435561299324036,
       -0.059297434985637665
     ],
-    "fecha_actualizacion_idioma": "2025-06-15T19:21:20.912790"
+    "fecha_actualizacion_idioma": "2025-06-18T10:22:12.749091"
   },
   "sergio": {
     "nombre": "Sergio",
