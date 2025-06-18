@@ -150,7 +150,7 @@ def obtener_estadisticas_juego(nombre_usuario, modo=None, nombre_juego=None):
         return None
     
     if "juegos" not in usuario:
-        return {"mensaje": "El usuario no ha jugado ningún juego aún"}
+        return {"mensaje": "El usuario no ha jugado ningun juego aun"}
     
     estadisticas = {}
     
@@ -340,10 +340,10 @@ def buscar_usuario_por_cara(vector_facial):
             print(f"Similitud con {datos.get('nombre', nombre_key)}: {similitud:.3f}")
             
             if similitud >= UMBRAL_SIMILITUD:
-                print(f"✅ Usuario {datos.get('nombre', nombre_key)} reconocido por cara")
+                print(f" Usuario {datos.get('nombre', nombre_key)} reconocido por cara")
                 return datos.get('nombre', nombre_key), datos
     
-    print("❌ No se encontró usuario con esa cara")
+    print(" No se encontró usuario con esa cara")
     return None, None
 
 def actualizar_vector_facial(nombre, vector_facial):
@@ -357,10 +357,10 @@ def actualizar_vector_facial(nombre, vector_facial):
         usuarios[nombre_key]["vector_facial"] = vector_facial
         usuarios[nombre_key]["fecha_actualizacion_facial"] = datetime.now().isoformat()
         guardar_usuarios(usuarios)
-        print(f"✅ Vector facial actualizado para {nombre}")
+        print(f" Vector facial actualizado para {nombre}")
         return True
     else:
-        print(f"❌ Usuario {nombre} no encontrado")
+        print(f" Usuario {nombre} no encontrado")
         return False
 
 def eliminar_vector_facial(nombre):
@@ -375,13 +375,13 @@ def eliminar_vector_facial(nombre):
             del usuarios[nombre_key]["vector_facial"]
             usuarios[nombre_key]["fecha_eliminacion_facial"] = datetime.now().isoformat()
             guardar_usuarios(usuarios)
-            print(f"✅ Vector facial eliminado para {nombre}")
+            print(f" Vector facial eliminado para {nombre}")
             return True
         else:
-            print(f"⚠️ Usuario {nombre} no tiene vector facial")
+            print(f" Usuario {nombre} no tiene vector facial")
             return False
     else:
-        print(f"❌ Usuario {nombre} no encontrado")
+        print(f" Usuario {nombre} no encontrado")
         return False
 
 def listar_usuarios_con_cara():
@@ -411,15 +411,14 @@ def verificar_usuario_existe(nombre):
 def configurar_umbral_similitud(nuevo_umbral):
     """
     Configura el umbral de similitud para el reconocimiento facial
-    Valores recomendados: 0.4 (permisivo) a 0.8 (estricto)
     """
     global UMBRAL_SIMILITUD
     if 0.0 <= nuevo_umbral <= 1.0:
         UMBRAL_SIMILITUD = nuevo_umbral
-        print(f"✅ Umbral de similitud configurado a {nuevo_umbral}")
+        print(f" Umbral de similitud configurado a {nuevo_umbral}")
         return True
     else:
-        print("❌ El umbral debe estar entre 0.0 y 1.0")
+        print(" El umbral debe estar entre 0.0 y 1.0")
         return False
 
 def obtener_estadisticas_usuarios():
@@ -449,7 +448,6 @@ def obtener_estadisticas_usuarios():
 def registrar_usuario_con_cara(nombre, idioma, vector_facial):
     """
     Función específica para registrar usuario con reconocimiento facial
-    (Wrapper para mantener compatibilidad con el código principal)
     """
     return registrar_usuario(nombre, idioma, vector_facial)
 
@@ -459,7 +457,7 @@ def obtener_datos_visibles_usuario(nombre):
     """
     usuario = obtener_usuario(nombre)
     if not usuario:
-        print(f"❌ Usuario {nombre} no encontrado")
+        print(f" Usuario {nombre} no encontrado")
         return None
     
     datos_visibles = {k: v for k, v in usuario.items() if k != "vector_facial"}
