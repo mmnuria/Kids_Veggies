@@ -6,7 +6,7 @@ import cv2
 from models.modelos import MODELOS_FRUTAS_VERDURAS, crear_modelo_por_id, obtener_info_modelo
 
 class GestorJuegosAR:
-    """Gestor de juegos adaptado para la aplicación AR"""
+    """Gestor de juegos para la aplicación AR"""
     
     def __init__(self):
         self.juego_activo = None
