@@ -9,7 +9,7 @@
 - **Nuria Manzano Mata**
 - Course: Ubiquitous Computing and Ambient Intelligence
 - Type: Individual project
-- Grade: 10
+- Grade: 10 (with highest honors).
 
 ---
 
@@ -40,21 +40,6 @@ All dependencies are listed in `requirements.txt`.
   - Progress tracked over time with statistical summaries.
 - **Context-Aware UI**: Application reacts to the presence of a user and adapts interface flow accordingly.
 - **Multilingual Support**: Language preference saved (UI not yet fully translated).
-
----
-
-## Project Structure
-
-KidsAndVeggies/
-├── ar/ # AR marker detection and rendering
-├── config/ # Camera calibration
-├── data/ # User data (JSON)
-├── media/ # 3D models for AR games
-├── models/ # AR model logic
-├── modules/ # Core logic (games, users, etc.)
-├── utils/ # Coordinate and image utilities
-├── main.py # Application entry point
-└── requirements.txt # Dependencies
 
 ---
 
